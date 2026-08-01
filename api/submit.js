@@ -4,7 +4,7 @@
 
 const { JWT } = require('google-auth-library');
 
-const SHEET_RANGE = 'submissions!A:L'; // id, ts, year, uni, wk, q1..q7
+const SHEET_RANGE = 'submissions!A:M'; // id, ts, year, uni, wk, q1..q7, comment
 const REQUIRED_Q = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7'];
 
 function loadServiceAccount() {
@@ -38,6 +38,11 @@ function sanitize(str) {
   // Strip characters that could be interpreted as a formula by spreadsheet
   // software if the sheet is ever opened/exported (formula injection guard).
   return String(str).replace(/^[=+\-@]/, "'$&").slice(0, 200);
+}
+
+function sanitizeComment(str) {
+  if (str === undefined || str === null) return '';
+  return String(str).replace(/^[=+\-@]/, "'$&").slice(0, 1000);
 }
 
 module.exports = async (req, res) => {
@@ -80,6 +85,7 @@ module.exports = async (req, res) => {
     sanitize(body.uni.trim()),
     Number(body.wk),
     ...REQUIRED_Q.map((q) => Number(body[q])),
+    sanitizeComment(body.comment),
   ];
 
   try {
