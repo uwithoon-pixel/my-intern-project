@@ -155,6 +155,9 @@ body{font-family:'TH Sarabun New','Sarabun','Noto Sans Thai','Helvetica Neue',Ar
 .tabs::-webkit-scrollbar{display:none}
 .tb{min-width:68px;flex-shrink:0;padding:.5rem .15rem;font-size:11px}
 .yr-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.85rem}
+.dash-refresh-row{display:flex;justify-content:flex-end;margin-bottom:.6rem}
+.dash-refresh-btn{font-size:11.5px;padding:.35rem .8rem;border-radius:20px;border:1px solid var(--bd);background:var(--sur);color:var(--p);cursor:pointer;font-family:inherit;font-weight:700}
+.dash-refresh-btn:disabled{opacity:.6}
 .yr-btn{font-size:12px;padding:.3rem .75rem;border-radius:20px;border:1px solid var(--bd);background:var(--sur);color:var(--mu);cursor:pointer;font-family:inherit;white-space:nowrap}
 .yr-btn.on{background:var(--p);color:#fff;border-color:var(--p)}
 .sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.85rem}
@@ -225,8 +228,7 @@ body{font-family:'TH Sarabun New','Sarabun','Noto Sans Thai','Helvetica Neue',Ar
 .sv-body{padding:1.25rem;flex:1}
 .sv-card{background:var(--sur);border-radius:var(--rrl);border:1px solid var(--bd);box-shadow:var(--sh);padding:1rem;margin-bottom:.85rem}
 .sv-card label{display:block;font-size:12.5px;color:var(--mu);margin-bottom:.35rem;font-weight:500}
-.sv-card select,.sv-card input,.sv-card textarea{width:100%;padding:.6rem .7rem;font-size:14px;font-family:inherit;border:1px solid var(--bd);border-radius:8px;color:var(--tx);background:var(--sur)}
-.sv-card textarea{resize:none;min-height:80px;line-height:1.5}
+.sv-card select,.sv-card input{width:100%;padding:.6rem .7rem;font-size:14px;font-family:inherit;border:1px solid var(--bd);border-radius:8px;color:var(--tx);background:var(--sur)}
 .sv-q{margin-bottom:1.1rem}
 .sv-q:last-child{margin-bottom:0}
 .sv-q-txt{font-size:14px;line-height:1.5;margin-bottom:.55rem;color:var(--tx)}
@@ -241,12 +243,6 @@ body{font-family:'TH Sarabun New','Sarabun','Noto Sans Thai','Helvetica Neue',Ar
 .sv-done div{font-size:52px;margin-bottom:.75rem}
 .sv-done h2{font-size:18px;color:var(--p);margin-bottom:.4rem}
 .sv-done p{font-size:13px;color:var(--mu);line-height:1.6}
-.cmt-card{padding:.65rem 0;border-bottom:1px solid var(--bd)}
-.cmt-card:last-child{border-bottom:none}
-.cmt-meta{font-size:11px;color:var(--mu);margin-bottom:.3rem;font-weight:600}
-.cmt-row{font-size:13px;line-height:1.5;margin-bottom:.2rem;color:var(--tx)}
-.cmt-row:last-child{margin-bottom:0}
-.cmt-lbl{font-weight:700;color:var(--p)}
 
 /* PIN gate for dashboard */
 .pin-wrap{padding:3rem 1.5rem;text-align:center}
@@ -725,6 +721,7 @@ function rDash(){
   }).join('');
 
   document.getElementById('dashContent').innerHTML=`
+    <div class="dash-refresh-row"><button class="dash-refresh-btn" onclick="manualRefresh()">🔄 รีเฟรชข้อมูลล่าสุด</button></div>
     <div class="yr-row">${yrBtns}</div>
     ${instBtns}
     <div class="sum-grid">
@@ -740,21 +737,7 @@ function rDash(){
     <div class="dash-sect"><div class="dash-sect-lbl">คะแนนรายด้าน${S.dInstSel!=='all'?' — '+S.dInstSel:''}</div></div>
     <div class="chart-card">${totResp?qDetailRows:'<div class="chart-empty">ยังไม่มีข้อมูลในช่วงที่เลือก</div>'}</div>
     ${compareHtml}
-    <div class="dash-sect"><div class="dash-sect-lbl">ความคิดเห็นจากนักศึกษา${S.dInstSel!=='all'?' — '+S.dInstSel:''}</div></div>
-    <div class="chart-card">${commentsHtml(subs)}</div>
   `;
-}
-function esc(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
-function commentsHtml(subs){
-  const withText=subs.filter(s=>(s.impress&&s.impress.trim())||(s.suggest&&s.suggest.trim()));
-  if(!withText.length)return '<div class="chart-empty">ยังไม่มีความคิดเห็นในช่วงที่เลือก</div>';
-  return withText.slice().reverse().map(s=>{
-    const d=new Date(s.ts);
-    const dstr=isNaN(d)?'':d.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'});
-    const impressRow=s.impress&&s.impress.trim()?`<div class="cmt-row"><span class="cmt-lbl">👍 ประทับใจ:</span> ${esc(s.impress)}</div>`:'';
-    const suggestRow=s.suggest&&s.suggest.trim()?`<div class="cmt-row"><span class="cmt-lbl">💡 ข้อเสนอแนะ:</span> ${esc(s.suggest)}</div>`:'';
-    return `<div class="cmt-card"><div class="cmt-meta">${esc(s.uni||'ไม่ระบุสถาบัน')} · ${dstr}</div>${impressRow}${suggestRow}</div>`;
-  }).join('');
 }
 
 
@@ -810,7 +793,7 @@ function openSurveyPreview(){
 }
 
 /* ===================== Student survey page ===================== */
-const SV={uni:'',wk:1,ans:{},impress:'',suggest:''};
+const SV={uni:'',wk:1,ans:{}};
 function svIsSurveyMode(){
   return new URLSearchParams(location.search).get('survey')==='1';
 }
@@ -840,14 +823,6 @@ function rSvBody(){
       </select>
     </div>
     <div class="sv-card">${qRows}</div>
-    <div class="sv-card">
-      <label>สิ่งที่ประทับใจที่สุดจากการฝึก</label>
-      <textarea id="sv-impress" placeholder="เช่น อาจารย์พี่เลี้ยงใจดีและสอนละเอียด" oninput="SV.impress=this.value">${SV.impress}</textarea>
-    </div>
-    <div class="sv-card">
-      <label>ข้อเสนอแนะเพื่อพัฒนาแหล่งฝึก</label>
-      <textarea id="sv-suggest" placeholder="เช่น อยากให้มีเวลาซักถามมากขึ้น" oninput="SV.suggest=this.value">${SV.suggest}</textarea>
-    </div>
     <button class="sv-submit" ${canSubmit?'':'disabled'} onclick="svSubmit()">✓ ส่งแบบสอบถาม</button>
     <p class="sv-anon">แบบสอบถามนี้ไม่ระบุชื่อผู้กรอก คำตอบจะถูกใช้เพื่อพัฒนาแหล่งฝึกงานเท่านั้น</p>`;
 }
@@ -855,18 +830,39 @@ function svSetAns(q,v){SV.ans[q]=v;rSvBody();}
 function svSubmit(){
   const answered=SAT_Q.filter((_,i)=>SV.ans['q'+(i+1)]).length;
   if(!SV.uni.trim()||answered!==SAT_Q.length)return;
-  const now=new Date();
-  const rec={id:'s'+Date.now()+Math.random().toString(36).slice(2,7),ts:now.toISOString(),year:String(now.getFullYear()),uni:SV.uni.trim(),wk:SV.wk,impress:SV.impress.trim(),suggest:SV.suggest.trim()};
-  SAT_Q.forEach((_,i)=>{rec['q'+(i+1)]=SV.ans['q'+(i+1)];});
-  let subs=[];
-  try{const d=localStorage.getItem('ir3_submissions');if(d)subs=JSON.parse(d);}catch(e){}
-  subs.push(rec);
-  try{localStorage.setItem('ir3_submissions',JSON.stringify(subs));}catch(e){}
-  document.getElementById('svBody').innerHTML=`<div class="sv-done"><div>🎉</div><h2>ขอบคุณสำหรับความคิดเห็น!</h2><p>คำตอบของคุณถูกบันทึกเรียบร้อยแล้ว<br>ข้อมูลจะถูกนำไปพัฒนาแหล่งฝึกงานต่อไป</p></div>`;
+  const btn=document.querySelector('.sv-submit');
+  if(btn){btn.disabled=true;btn.textContent='กำลังส่ง...';}
+  const payload={uni:SV.uni.trim(),wk:SV.wk};
+  SAT_Q.forEach((_,i)=>{payload['q'+(i+1)]=SV.ans['q'+(i+1)];});
+  fetch('/api/submit',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  }).then(r=>r.json()).then(data=>{
+    if(data&&data.ok){
+      document.getElementById('svBody').innerHTML=`<div class="sv-done"><div>🎉</div><h2>ขอบคุณสำหรับความคิดเห็น!</h2><p>คำตอบของคุณถูกบันทึกเรียบร้อยแล้ว<br>ข้อมูลจะถูกนำไปพัฒนาแหล่งฝึกงานต่อไป</p></div>`;
+    }else{
+      svSubmitError();
+    }
+  }).catch(()=>{svSubmitError();});
+}
+function svSubmitError(){
+  const btn=document.querySelector('.sv-submit');
+  if(btn){btn.disabled=false;btn.textContent='✓ ส่งแบบสอบถาม';}
+  let box=document.getElementById('svErrBox');
+  if(!box){
+    box=document.createElement('p');
+    box.id='svErrBox';
+    box.style.cssText='color:#B91C1C;font-size:12.5px;text-align:center;margin-top:.6rem';
+    document.getElementById('svBody').appendChild(box);
+  }
+  box.textContent='ส่งไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง';
 }
 
 /* ===================== Dashboard PIN gate ===================== */
 const DASH_PIN='1817';
+let SUBS_CACHE=[];
+let SUBS_LOADED=false;
 function pinUnlocked(){
   try{return sessionStorage.getItem('ir3_dash_ok')==='1';}catch(e){return false;}
 }
@@ -874,19 +870,36 @@ function setPinUnlocked(){
   try{sessionStorage.setItem('ir3_dash_ok','1');}catch(e){}
 }
 function onPinInput(v){
-  const dots=[1,2,3,4];
   document.getElementById('pinErr').textContent='';
   if(v.length===4)checkPin();
 }
 function checkPin(){
   const v=document.getElementById('pinInput').value;
-  if(v===DASH_PIN){
-    setPinUnlocked();
-    showDashUnlocked();
-  }else{
-    document.getElementById('pinErr').textContent='รหัสไม่ถูกต้อง กรุณาลองใหม่';
-    document.getElementById('pinInput').value='';
-  }
+  const btn=document.querySelector('.pin-btn');
+  if(btn){btn.disabled=true;btn.textContent='กำลังตรวจสอบ...';}
+  fetch('/api/results',{headers:{'X-Dash-Pin':v}}).then(r=>{
+    if(r.status===401){
+      document.getElementById('pinErr').textContent='รหัสไม่ถูกต้อง กรุณาลองใหม่';
+      document.getElementById('pinInput').value='';
+      if(btn){btn.disabled=false;btn.textContent='ปลดล็อก';}
+      return null;
+    }
+    return r.json();
+  }).then(data=>{
+    if(!data)return;
+    if(data.ok){
+      SUBS_CACHE=data.submissions||[];
+      SUBS_LOADED=true;
+      setPinUnlocked();
+      showDashUnlocked();
+    }else{
+      document.getElementById('pinErr').textContent='เกิดข้อผิดพลาด กรุณาลองใหม่';
+      if(btn){btn.disabled=false;btn.textContent='ปลดล็อก';}
+    }
+  }).catch(()=>{
+    document.getElementById('pinErr').textContent='เชื่อมต่อไม่สำเร็จ ตรวจสอบอินเทอร์เน็ต';
+    if(btn){btn.disabled=false;btn.textContent='ปลดล็อก';}
+  });
 }
 function showDashUnlocked(){
   document.getElementById('pinGate').style.display='none';
@@ -894,20 +907,35 @@ function showDashUnlocked(){
   rDash();
 }
 function dashEnter(){
-  if(pinUnlocked())showDashUnlocked();
-  else{
+  if(pinUnlocked()){
+    if(SUBS_LOADED)showDashUnlocked();
+    else refreshSubsAndShow();
+  }else{
     document.getElementById('pinGate').style.display='block';
     document.getElementById('dashWrap').style.display='none';
     const pi=document.getElementById('pinInput');
     if(pi){pi.value='';pi.focus();}
   }
 }
+function refreshSubsAndShow(){
+  fetch('/api/results',{headers:{'X-Dash-Pin':DASH_PIN}}).then(r=>r.json()).then(data=>{
+    if(data&&data.ok){SUBS_CACHE=data.submissions||[];SUBS_LOADED=true;}
+    showDashUnlocked();
+  }).catch(()=>{showDashUnlocked();});
+}
+function manualRefresh(){
+  const btn=document.querySelector('.dash-refresh-btn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ กำลังโหลด...';}
+  fetch('/api/results',{headers:{'X-Dash-Pin':DASH_PIN}}).then(r=>r.json()).then(data=>{
+    if(data&&data.ok){SUBS_CACHE=data.submissions||[];SUBS_LOADED=true;rDash();toast('อัปเดตข้อมูลล่าสุดแล้ว');}
+  }).catch(()=>{toast('รีเฟรชไม่สำเร็จ');
+    if(btn){btn.disabled=false;btn.textContent='🔄 รีเฟรชข้อมูลล่าสุด';}
+  });
+}
 
 /* ===================== Submissions helpers ===================== */
 function getSubs(){
-  let subs=[];
-  try{const d=localStorage.getItem('ir3_submissions');if(d)subs=JSON.parse(d);}catch(e){}
-  return subs;
+  return SUBS_CACHE;
 }
 function subYears(){
   const y=new Set();
