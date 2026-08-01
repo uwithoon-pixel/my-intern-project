@@ -1,12 +1,12 @@
 // api/results.js
 // Returns all satisfaction-survey submissions as JSON for the mentor dashboard.
-// Requires a PIN (sent as a header) so the data endpoint isn't wide open to
-// anyone who finds the URL — this is a light deterrent, not bank-grade auth.
+// No access control here — anyone with the dashboard URL can view aggregate
+// results. If this ever needs to be restricted again, reintroduce a PIN or
+// proper auth check before returning data.
 
 const { JWT } = require('google-auth-library');
 
-const SHEET_RANGE = 'submissions!A2:L'; // skip header row
-const DASH_PIN = process.env.DASH_PIN || '1817';
+const SHEET_RANGE = 'submissions!A2:M'; // skip header row; includes comment column
 
 function loadServiceAccount() {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT;
@@ -25,7 +25,7 @@ async function getAuthClient() {
 }
 
 function rowsToObjects(rows) {
-  const cols = ['id', 'ts', 'year', 'uni', 'wk', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7'];
+  const cols = ['id', 'ts', 'year', 'uni', 'wk', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'comment'];
   return (rows || [])
     .filter((r) => r && r[0]) // skip blank rows
     .map((r) => {
@@ -40,7 +40,7 @@ function rowsToObjects(rows) {
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Dash-Pin');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     res.status(204).end();
@@ -48,12 +48,6 @@ module.exports = async (req, res) => {
   }
   if (req.method !== 'GET') {
     res.status(405).json({ ok: false, error: 'method not allowed' });
-    return;
-  }
-
-  const pin = req.headers['x-dash-pin'] || (req.query && req.query.pin);
-  if (pin !== DASH_PIN) {
-    res.status(401).json({ ok: false, error: 'unauthorized' });
     return;
   }
 
