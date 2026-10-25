@@ -279,6 +279,17 @@ body{font-family:'TH Sarabun New','Sarabun','Noto Sans Thai','Helvetica Neue',Ar
 .cmt-uni{font-size:11.5px;font-weight:700;color:var(--p)}
 .cmt-date{font-size:10.5px;color:var(--mu);white-space:nowrap}
 .cmt-txt{font-size:13px;line-height:1.55;color:var(--tx);white-space:pre-wrap;word-break:break-word}
+
+/* Report tab */
+.rp-h{font-size:14px;font-weight:700;color:var(--p);margin:1rem 0 .5rem;padding-bottom:.25rem;border-bottom:2px solid var(--bd)}
+.rp-p{font-size:13px;line-height:1.7;margin-bottom:.7rem}
+.rp-note{font-size:11px;color:var(--mu);margin-top:.5rem}
+.rp-hint{font-size:11.5px;color:var(--mu);line-height:1.6;margin-bottom:.6rem}
+.rp-actions{display:flex;gap:.5rem;margin-bottom:.8rem}
+.rp-ol{padding-left:1.2rem;font-size:13px;line-height:1.7}
+.rpt .ftbl th,.rpt .ftbl td{font-size:12px}
+.rpt .ftbl .tc{width:auto;text-align:center}
+.rpt .chart-card{break-inside:avoid}
 </style>
 </head>
 <body>
@@ -302,6 +313,7 @@ body{font-family:'TH Sarabun New','Sarabun','Noto Sans Thai','Helvetica Neue',Ar
   <button class="tb on" onclick="setTab('groups',this)">👥<br>กลุ่มนักศึกษา</button>
   <button class="tb" onclick="setTab('ready',this)">✅<br>ความพร้อมศูนย์</button>
   <button class="tb" onclick="setTab('dash',this)">📊<br>สถิติ</button>
+  <button class="tb" onclick="setTab('report',this)">📑<br>รายงาน</button>
   <button class="tb" onclick="setTab('forms',this)">📋<br>แบบฟอร์ม</button>
   <button class="tb" onclick="setTab('cfg',this)">⚙️<br>ตั้งค่า</button>
 </div>
@@ -333,6 +345,9 @@ body{font-family:'TH Sarabun New','Sarabun','Noto Sans Thai','Helvetica Neue',Ar
       <div id="dashContent"><div class="chart-empty" style="padding:3rem 0">⏳ กำลังโหลดข้อมูล...</div></div>
     </div>
   </div>
+  <div class="view" id="view-report">
+    <div id="rptContent"><div class="chart-empty" style="padding:3rem 0">⏳ กำลังโหลดข้อมูล...</div></div>
+  </div>
   <div class="view" id="view-forms"><div class="form-list" id="fList"></div></div>
   <div class="view" id="view-cfg">
     <div class="itip"><strong>💡 ติดตั้งเป็นแอพ Chrome</strong>Chrome เมนู ⋮ → เพิ่มเติม → สร้างทางลัด… → ✓ เปิดเป็นหน้าต่าง → สร้าง</div>
@@ -361,7 +376,7 @@ body{font-family:'TH Sarabun New','Sarabun','Noto Sans Thai','Helvetica Neue',Ar
 <div id="modalAdd">
   <div class="msheet">
     <h2>➕ รับกลุ่มนักศึกษาใหม่</h2>
-    <div class="fg"><label>มหาวิทยาลัย / สถาบัน</label><input id="m-uni" placeholder="เช่น มหาวิทยาลัยขอนแก่น"></div>
+    <div class="fg"><label>มหาวิทยาลัย / สถาบัน</label><select id="m-uni-sel" onchange="onModalUni(this.value)"></select><input id="m-uni" style="display:none;margin-top:.4rem" placeholder="พิมพ์ชื่อสถาบัน"></div>
     <div class="fg"><label>วันที่เริ่มฝึก</label><input id="m-date" type="date"></div>
     <div class="fg"><label>ระยะเวลา</label><select id="m-wk"><option value="1">1 สัปดาห์</option><option value="2">2 สัปดาห์</option></select></div>
     <div class="fg"><label>จำนวนนักศึกษา</label><select id="m-cnt" onchange="renderStuInputs()"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
@@ -535,10 +550,10 @@ function updStu(i,v){const g=cur();if(!g)return;g.stus[i]=v;SS();}
 function addStu(){const g=cur();if(!g)return;g.cnt++;g.stus.push('');rDet();}
 function rmStu(i){const g=cur();if(!g||g.cnt<=1)return;g.stus.splice(i,1);g.cnt=Math.max(1,g.cnt-1);rDet();}
 function delGrp(){if(!confirm('ลบกลุ่มนี้?\n(ข้อมูลทั้งหมดจะถูกลบถาวร)'))return;S.groups=S.groups.filter(x=>x.id!==S.cGid);SS();closeDetail();toast('ลบกลุ่มเรียบร้อย');}
-function openAdd(){document.getElementById('m-uni').value='';document.getElementById('m-date').value=new Date().toISOString().slice(0,10);document.getElementById('m-wk').value='1';document.getElementById('m-cnt').value='3';renderStuInputs();document.getElementById('modalAdd').classList.add('show');}
+function openAdd(){fillUniSelect();document.getElementById('m-date').value=new Date().toISOString().slice(0,10);document.getElementById('m-wk').value='1';document.getElementById('m-cnt').value='3';renderStuInputs();document.getElementById('modalAdd').classList.add('show');}
 function closeAdd(){document.getElementById('modalAdd').classList.remove('show');}
 function renderStuInputs(){const n=parseInt(document.getElementById('m-cnt').value)||3;let h='';for(let i=0;i<n;i++)h+=`<div class="fg"><label>นักศึกษาคนที่ ${i+1} (ไม่บังคับ)</label><input class="ms" placeholder="ชื่อ-นามสกุล"></div>`;document.getElementById('stuInputs').innerHTML=h;}
-function addGroup(){const uni=document.getElementById('m-uni').value.trim();if(!uni){alert('กรุณากรอกชื่อมหาวิทยาลัย');return;}const n=parseInt(document.getElementById('m-cnt').value)||3;const stus=Array.from(document.querySelectorAll('.ms')).map(i=>i.value.trim());const g={id:'g'+Date.now(),uni,cnt:n,stus,sd:document.getElementById('m-date').value,wk:parseInt(document.getElementById('m-wk').value)||1,st:'active',or:{},docs:{},ppe:{},notes:'',sat:{}};S.groups.unshift(g);SS();closeAdd();rGroups();rHeader();S.dOpen={...S.dOpen,'ds-orient':true,'ds-docs':true,'ds-ppe':true};openDet(g.id);toast('เพิ่มกลุ่มเรียบร้อย');}
+function addGroup(){const uni=getModalUni();if(!uni){alert('กรุณาเลือกสถาบัน');return;}const n=parseInt(document.getElementById('m-cnt').value)||3;const stus=Array.from(document.querySelectorAll('.ms')).map(i=>i.value.trim());const g={id:'g'+Date.now(),uni,cnt:n,stus,sd:document.getElementById('m-date').value,wk:parseInt(document.getElementById('m-wk').value)||1,st:'active',or:{},docs:{},ppe:{},notes:'',sat:{}};S.groups.unshift(g);SS();closeAdd();rGroups();rHeader();S.dOpen={...S.dOpen,'ds-orient':true,'ds-docs':true,'ds-ppe':true};openDet(g.id);toast('เพิ่มกลุ่มเรียบร้อย');}
 function rReady(){const f=S.filt;let h='';RSEC.forEach(sec=>{const vis=sec.items.filter(i=>{if(f==='todo')return!S.ready[i.id];if(f==='done')return S.ready[i.id];if(f==='urg')return i.p==='u'&&!S.ready[i.id];return true;});if(f!=='all'&&!vis.length)return;const tot=sec.items.length;const don=sec.items.filter(i=>S.ready[i.id]).length;const ok=don===tot;const io=S.openR[sec.id];h+=`<div class="rsc"><div class="rsc-hd" onclick="togR('${sec.id}')"><span class="rsc-icon">${sec.icon}</span><span class="rsc-title">${sec.title}</span><span class="rsc-badge${ok?' ok':''}">${ok?'✓ ครบ':don+'/'+tot}</span><span class="chev${io?' open':''}">▼</span></div><div class="rsc-body${io?' open':''}">${vis.map(item=>{const ck=S.ready[item.id];const tg=item.p==='u'?'<span class="tag tag-u">ด่วน</span>':item.p==='s'?'<span class="tag tag-s">ต่อไป</span>':'';return`<div class="cr" onclick="tRdy('${item.id}')"><div class="cbox${ck?' on':''}">✓</div><div class="cr-txt${ck?' on':''}">${item.text}${tg}</div></div>`;}).join('')}</div></div>`;});document.getElementById('rList').innerHTML=h||'<div class="empty-st"><p>ไม่มีรายการ</p></div>';}
 function togR(id){S.openR[id]=!S.openR[id];rReady();}
 function tRdy(id){S.ready[id]=!S.ready[id];SS();rHeader();rReady();}
@@ -547,7 +562,7 @@ function rForms(){document.getElementById('fList').innerHTML=FLIST.map(f=>`<div 
 function loadCfg(){['hosp','dept','main','nir','bv','bnv','tel'].forEach(k=>{const e=document.getElementById('c-'+k);if(e)e.value=S.cfg[k]||'';});}
 function saveCfg(){['hosp','dept','main','nir','bv','bnv','tel'].forEach(k=>{const e=document.getElementById('c-'+k);if(e)S.cfg[k]=e.value;});SS();rHeader();}
 function resetAll(){if(!confirm('รีเซ็ตข้อมูลทั้งหมด?\n(กลุ่มนักศึกษาและรายการตรวจสอบจะถูกลบ)'))return;localStorage.removeItem('ir3');S={groups:[],ready:{},openR:{},filt:'all',cfg:{hosp:'',dept:'',main:'',nir:'',bv:'',bnv:'',tel:''},cGid:null,dOpen:{}};loadCfg();rGroups();rHeader();rReady();toast('รีเซ็ตเรียบร้อย');}
-function setTab(id,btn){document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));document.getElementById('view-'+id).classList.add('on');if(id==='dash')dashEnter();}
+function setTab(id,btn){document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));document.getElementById('view-'+id).classList.add('on');if(id==='dash')dashEnter();if(id==='report')reportEnter();}
 function openForm(id){const f=FLIST.find(x=>x.id===id);document.getElementById('poTitle').textContent=f.title;document.getElementById('pBody').innerHTML=FH[id]();document.getElementById('printOv').classList.add('show');}
 function closePrint(){document.getElementById('printOv').classList.remove('show');}
 const ORROWS=['แนะนำตัวกับอาจารย์พี่เลี้ยงทุกท่านในศูนย์','ทัวร์ห้อง IR ครบทั้ง 5 ห้อง (NIR / Body Vasc 2 ห้อง / Body Non-vasc 2 ห้อง)','รับทราบกฎระเบียบ: เวลาเข้า-ออก, การแต่งกาย (Scrub + รองเท้าปิดส้น)','รับทราบนโยบายการใช้โทรศัพท์ในห้อง IR','Radiation Protection Briefing ครบถ้วน (Lead apron, Thyroid shield, Dosimeter)','รับ Dosimeter — เข้าใจวิธีพก, อ่านค่า และส่งคืน','รับ Logbook รายบุคคล — เข้าใจวิธีบันทึก O/A/P','รับ Competency Checklist — ทราบเป้าหมายทักษะแยกห้อง','รับกำหนดการฝึกงานรายสัปดาห์ของกลุ่มตนเอง',"รับทราบนโยบาย Do / Don't — เซ็นรับทราบแล้ว",'ทราบช่องทางติดต่ออาจารย์พี่เลี้ยงกรณีฉุกเฉิน','Orientation เสร็จสิ้น — อาจารย์พี่เลี้ยงเซ็นรับรอง'];
@@ -795,7 +810,7 @@ function openSurveyPreview(){
 }
 
 /* ===================== Student survey page ===================== */
-const SV={uni:'',wk:1,ans:{},comment:''};
+const SV={uni:'',uniSel:'',uniOther:'',wk:1,ans:{},comment:''};
 function svIsSurveyMode(){
   return new URLSearchParams(location.search).get('survey')==='1';
 }
@@ -815,7 +830,8 @@ function rSvBody(){
   document.getElementById('svBody').innerHTML=`
     <div class="sv-card">
       <label>มหาวิทยาลัย / สถาบัน</label>
-      <input id="sv-uni" placeholder="เช่น มหาวิทยาลัยขอนแก่น" value="${SV.uni}" oninput="SV.uni=this.value">
+      <select id="sv-uni-sel" onchange="svUniSel(this.value)">${uniOptionsHtml(SV.uniSel||'')}</select>
+      ${SV.uniSel==='__other'?`<input id="sv-uni" style="margin-top:.5rem" placeholder="พิมพ์ชื่อสถาบัน" value="${escAttr(SV.uniOther||'')}" oninput="svUniOther(this.value)">`:''}
     </div>
     <div class="sv-card">
       <label>ระยะเวลาฝึกงาน</label>
@@ -917,6 +933,245 @@ function subAvg(rec){
 }
 function monthKey(iso){
   try{return iso.slice(0,7);}catch(e){return '';}
+}
+
+/* ===================== รายชื่อสถาบัน (dropdown) + ชื่อมาตรฐาน ===================== */
+/* แก้ไขรายชื่อสถาบันได้ที่นี่ — name = ชื่อที่เก็บ/แสดง, alias = คำที่ใช้จับคู่ชื่อที่พิมพ์ไม่เหมือนกัน (ตัดช่องว่าง/จุดออกแล้ว) */
+const UNI_LIST=[
+  {name:'มหาวิทยาลัยสงขลานครินทร์',alias:['อ','สงขลานคริ','สงขลานครี','psu']},
+  {name:'มหาวิทยาลัยรังสิต',alias:['รังสิต','rsu']},
+  {name:'มหาวิทยาลัยเชียงใหม่',alias:['เชียงใหม่','มช','cmu']},
+  {name:'มหาวิทยาลัยนเรศวร',alias:['นเรศวร','มน']},
+  {name:'มหาวิทยาลัยขอนแก่น',alias:['ขอนแก่น','มข']},
+  {name:'จุฬาลงกรณ์มหาวิทยาลัย',alias:['จุฬา','จฬ']},
+  {name:'มหาวิทยาลัยมหิดล',alias:['มหิดล']},
+  {name:'มหาวิทยาลัยพะเยา',alias:['พะเยา']},
+  {name:'มหาวิทยาลัยทักษิณ',alias:['ทักษิณ']}
+];
+function uniKey(raw){
+  let s=String(raw||'').trim().toLowerCase();
+  s=s.replace(/^ม\./,'');
+  s=s.replace(/[\s.]/g,'');
+  s=s.replace(/^(มหาวิทยาลัย|มหาลัย|มหาวิทยาลัย|ม)(?=.)/,'');
+  return s;
+}
+function canonUni(raw){
+  const r=String(raw||'').trim();
+  if(!r)return 'ไม่ระบุสถาบัน';
+  const k=uniKey(r);
+  for(const u of UNI_LIST){
+    for(const a of u.alias){
+      if(k===a||(a.length>=4&&k.includes(a)))return u.name;
+    }
+  }
+  return r;
+}
+function isTestUni(raw){return /^เทส/.test(String(raw||'').trim());}
+function escAttr(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function uniOptionsHtml(selVal){
+  return '<option value="">— เลือกสถาบัน —</option>'+
+    UNI_LIST.map(u=>`<option value="${escAttr(u.name)}"${selVal===u.name?' selected':''}>${u.name}</option>`).join('')+
+    `<option value="__other"${selVal==='__other'?' selected':''}>อื่นๆ (พิมพ์ชื่อเอง)</option>`;
+}
+/* --- modal รับกลุ่มใหม่ --- */
+function fillUniSelect(){
+  document.getElementById('m-uni-sel').innerHTML=uniOptionsHtml('');
+  const o=document.getElementById('m-uni');o.value='';o.style.display='none';
+}
+function onModalUni(v){document.getElementById('m-uni').style.display=v==='__other'?'block':'none';}
+function getModalUni(){
+  const v=document.getElementById('m-uni-sel').value;
+  if(v==='__other')return canonUni(document.getElementById('m-uni').value);
+  return v;
+}
+/* --- แบบสอบถามนักศึกษา --- */
+function svSyncUni(){
+  SV.uni=SV.uniSel==='__other'?canonUni(SV.uniOther||''):(SV.uniSel||'');
+  if(SV.uniSel==='__other'&&!(SV.uniOther||'').trim())SV.uni='';
+}
+function svUniSel(v){SV.uniSel=v;svSyncUni();rSvBody();}
+function svUniOther(v){
+  SV.uniOther=v;svSyncUni();
+  const answered=SAT_Q.filter((_,i)=>SV.ans['q'+(i+1)]).length;
+  const b=document.querySelector('.sv-submit');
+  if(b)b.disabled=!(SV.uni.trim().length>0&&answered===SAT_Q.length);
+}
+
+/* ===================== รายงานสรุป (เลือกปี / เทียบหลายปี) ===================== */
+const THEMES=[
+  {t:'อาจารย์/พี่เลี้ยง ให้ความรู้และดูแล',kw:['อาจารย์','พี่เลี้ยง','พี่ๆ','ครู']},
+  {t:'บรรยากาศเป็นกันเอง ใจดี ใส่ใจ',kw:['เป็นกันเอง','อบอุ่น','บรรยากาศ','ใจดี','น่ารัก','ใส่ใจ','เอาใจใส่']},
+  {t:'ได้เรียนรู้/ประสบการณ์จริง',kw:['เรียนรู้','ประสบการณ์','ได้ความรู้','ความรู้']},
+  {t:'เคส/โอกาสลงมือปฏิบัติ',kw:['เคส','case','ลงมือ','ได้ทำ','ได้ลอง','อยากลอง']},
+  {t:'ระยะเวลาฝึก (สั้น/ขอเพิ่ม)',kw:['ระยะเวลา','สั้น','นานขึ้น','เพิ่มเวลา','น้อยไป','น้อยเกิน']},
+  {t:'ตารางฝึก/การประสานงาน/ข้อมูลล่วงหน้า',kw:['ตาราง','กำหนดการ','ประสาน','แจ้ง','ล่วงหน้า']},
+  {t:'สถานที่/สิ่งอำนวยความสะดวก',kw:['ที่จอด','ห้องน้ำ','ที่นั่ง','ที่พัก','ล็อคเกอร์','ตู้เก็บ','สถานที่']},
+  {t:'ความปลอดภัย/รังสี',kw:['ปลอดภัย','รังสี','ตะกั่ว','dosimeter','apron']}
+];
+function lvLabel(a){return a>=4.5?'ดีมาก':a>=3.5?'ดี':a>=2.5?'ปานกลาง':'ควรปรับปรุง';}
+function yTh(y){return parseInt(y)+543;}
+function mean(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:null;}
+function f1(v){return v===null||v===undefined?'—':v.toFixed(1);}
+function cleanSubs(){
+  return getSubs().filter(s=>!isTestUni(s.uni)).map(s=>Object.assign({},s,{uniC:canonUni(s.uni)}));
+}
+function rptYearsAvail(){return [...new Set(cleanSubs().map(s=>s.year).filter(Boolean))].sort();}
+function reportEnter(){
+  if(SUBS_LOADED){rReport();return;}
+  document.getElementById('rptContent').innerHTML='<div class="chart-empty" style="padding:3rem 0">⏳ กำลังโหลดข้อมูล...</div>';
+  fetch('/api/results').then(r=>r.json()).then(data=>{
+    if(data&&data.ok){SUBS_CACHE=data.submissions||[];SUBS_LOADED=true;rReport();}
+    else document.getElementById('rptContent').innerHTML='<div class="chart-empty" style="padding:3rem 0">เกิดข้อผิดพลาด ลองรีเฟรชหน้าใหม่</div>';
+  }).catch(()=>{document.getElementById('rptContent').innerHTML='<div class="chart-empty" style="padding:3rem 0">เชื่อมต่อไม่สำเร็จ ตรวจสอบอินเทอร์เน็ต</div>';});
+}
+function rptToggleYear(y){
+  const yrs=rptYearsAvail();
+  let sel=(S.rptSel&&S.rptSel.length)?S.rptSel.slice():[];
+  if(y==='all'){sel=[];}
+  else{
+    if(sel.includes(y))sel=sel.filter(x=>x!==y);else sel.push(y);
+    if(sel.length===yrs.length)sel=[];
+  }
+  S.rptSel=sel.sort();SS();rReport();
+}
+function rptSelYears(){
+  const yrs=rptYearsAvail();
+  let sel=(S.rptSel||[]).filter(y=>yrs.includes(y));
+  if(!sel.length){ if(S.rptSel===undefined&&yrs.length)return [yrs[yrs.length-1]]; return yrs; }
+  return sel;
+}
+function themeCounts(subs){
+  const cm=subs.filter(s=>s.comment&&String(s.comment).trim());
+  return {n:cm.length,rows:THEMES.map(th=>({t:th.t,c:cm.filter(s=>{const x=String(s.comment).toLowerCase();return th.kw.some(k=>x.includes(k));}).length})).filter(r=>r.c>0).sort((a,b)=>b.c-a.c)};
+}
+function qAvgsOf(subs){return SAT_Q.map((_,i)=>mean(subs.map(s=>Number(s['q'+(i+1)])).filter(v=>!isNaN(v)&&v>0)));}
+function deltaHtml(d){
+  if(d===null)return '<span class="cmp-delta flat">—</span>';
+  const cls=d>0.05?'up':(d<-0.05?'down':'flat');
+  return `<span class="cmp-delta ${cls}">${d>0?'+':''}${d.toFixed(1)}</span>`;
+}
+function rptBuild(){
+  const all=cleanSubs();
+  const sel=rptSelYears();
+  const subs=all.filter(s=>sel.includes(s.year));
+  const multi=sel.length>1;
+  const yrLabel=multi?('ปี '+sel.map(yTh).join(', ')):(sel.length?'ปี '+yTh(sel[0]):'—');
+  const n=subs.length;
+  const out={sel,subs,multi,yrLabel,n};
+  if(!n){out.html='<div class="chart-empty" style="padding:2rem 0">ยังไม่มีข้อมูลในปีที่เลือก</div>';out.text='';return out;}
+  const overall=mean(subs.map(subAvg));
+  const unis=[...new Set(subs.map(s=>s.uniC))].sort();
+  const w1=subs.filter(s=>Number(s.wk)===1).length,w2=subs.filter(s=>Number(s.wk)===2).length;
+  const qa=qAvgsOf(subs);
+  const order=qa.map((v,i)=>({i,v})).filter(x=>x.v!==null).sort((a,b)=>a.v-b.v);
+  const low=order.slice(0,3),high=order.slice(-3).reverse();
+  const cmts=subs.filter(s=>s.comment&&String(s.comment).trim());
+  const th=themeCounts(subs);
+
+  /* สรุปภาพรวม (ข้อความ) */
+  let sumTxt=`${yrLabel} มีนักศึกษาตอบแบบสอบถาม ${n} คน จาก ${unis.length} สถาบัน (ฝึก 1 สัปดาห์ ${w1} คน / 2 สัปดาห์ ${w2} คน) ความพึงพอใจเฉลี่ยรวม ${f1(overall)} จาก 5 (${lvLabel(overall)}). `;
+  if(high.length)sumTxt+=`ด้านที่ได้คะแนนสูงสุด: ${high.map(x=>`"${SAT_Q[x.i]}" (${f1(x.v)})`).join(', ')}. `;
+  if(low.length)sumTxt+=`ด้านที่ควรพัฒนา (คะแนนต่ำสุด): ${low.map(x=>`"${SAT_Q[x.i]}" (${f1(x.v)})`).join(', ')}. `;
+  if(multi){
+    const per=sel.map(y=>({y,v:mean(all.filter(s=>s.year===y).map(subAvg))}));
+    const first=per[0],last=per[per.length-1];
+    if(first.v!==null&&last.v!==null){const d=last.v-first.v;sumTxt+=`แนวโน้มจากปี ${yTh(first.y)} ถึง ${yTh(last.y)}: ${d>0.05?'เพิ่มขึ้น':d<-0.05?'ลดลง':'ใกล้เคียงเดิม'} (${d>0?'+':''}${d.toFixed(1)}). `;}
+  }
+  out.text=sumTxt;
+
+  let h='';
+  h+=`<div class="rp-h">1. สรุปภาพรวม — ${escHtml(yrLabel)}</div><p class="rp-p">${escHtml(sumTxt)}</p>`;
+  h+=`<div class="sum-grid">
+    <div class="sum-card"><div class="sum-n">${n}</div><div class="sum-l">คำตอบทั้งหมด</div></div>
+    <div class="sum-card"><div class="sum-n" style="color:${scoreClr(overall)}">${f1(overall)}</div><div class="sum-l">ความพึงพอใจเฉลี่ย (${lvLabel(overall)})</div></div>
+    <div class="sum-card"><div class="sum-n">${unis.length}</div><div class="sum-l">สถาบันที่ตอบ</div></div>
+    <div class="sum-card"><div class="sum-n">${cmts.length}</div><div class="sum-l">ความคิดเห็นเพิ่มเติม</div></div></div>`;
+
+  /* แนวโน้มหลายปี */
+  if(multi){
+    const pts=sel.map(y=>({lbl:'ปี '+String(yTh(y)).slice(-2),v:mean(all.filter(s=>s.year===y).map(subAvg))})).filter(p=>p.v!==null);
+    h+=`<div class="rp-h">2. แนวโน้มเทียบรายปี</div><div class="chart-card"><h3>ค่าเฉลี่ยรวมรายปี</h3>${lineChartSvg(pts,{})}</div>`;
+    const ys=sel;
+    const head=`<tr><th>ด้านที่ประเมิน</th>${ys.map(y=>`<th class="tc">${yTh(y)}</th>`).join('')}<th class="tc">เปลี่ยน</th></tr>`;
+    const perY=ys.map(y=>qAvgsOf(all.filter(s=>s.year===y)));
+    const rows=SAT_Q.map((q,i)=>{
+      const vals=perY.map(a=>a[i]);
+      const fv=vals.find(v=>v!==null),lv=[...vals].reverse().find(v=>v!==null);
+      const d=(fv!==undefined&&lv!==undefined&&vals.filter(v=>v!==null).length>1)?lv-fv:null;
+      return `<tr><td>${i+1}. ${q}</td>${vals.map(v=>`<td class="tc" style="color:${v===null?'var(--mu)':scoreClr(v)};font-weight:700">${f1(v)}</td>`).join('')}<td class="tc">${deltaHtml(d)}</td></tr>`;
+    }).join('');
+    const ov=ys.map(y=>mean(all.filter(s=>s.year===y).map(subAvg)));
+    const cn=ys.map(y=>all.filter(s=>s.year===y).length);
+    const fvo=ov.find(v=>v!==null),lvo=[...ov].reverse().find(v=>v!==null);
+    h+=`<div class="chart-card" style="overflow-x:auto"><table class="ftbl">${head}${rows}
+      <tr><td><b>ค่าเฉลี่ยรวม</b></td>${ov.map(v=>`<td class="tc"><b>${f1(v)}</b></td>`).join('')}<td class="tc">${deltaHtml(ov.filter(v=>v!==null).length>1?lvo-fvo:null)}</td></tr>
+      <tr><td>จำนวนคำตอบ</td>${cn.map(c=>`<td class="tc">${c}</td>`).join('')}<td></td></tr></table></div>`;
+  }
+
+  /* คะแนนรายด้าน (รวมปีที่เลือก) */
+  const secQ=multi?3:2;
+  h+=`<div class="rp-h">${secQ}. คะแนนรายด้าน${multi?' (รวมปีที่เลือก)':''} — เรียงจากน้อยไปมาก</div><div class="chart-card">`+
+    order.map(x=>`<div class="q-row"><div class="q-lbl">${x.i+1}. ${SAT_Q[x.i]}</div><div class="q-vals"><div class="mini-bw"><div class="mini-b" style="width:${x.v/5*100}%;background:${scoreClr(x.v)}"></div></div><span class="q-num" style="color:${scoreClr(x.v)}">${f1(x.v)}</span></div></div>`).join('')+`</div>`;
+
+  /* แยกตามสถาบัน */
+  const secU=secQ+1;
+  const urows=unis.map(u=>{
+    const us=subs.filter(s=>s.uniC===u);
+    const cells=multi?sel.map(y=>{const ys=us.filter(s=>s.year===y);return `<td class="tc">${ys.length?f1(mean(ys.map(subAvg)))+' <small style="color:var(--mu)">('+ys.length+')</small>':'—'}</td>`;}).join(''):'';
+    return `<tr><td>${escHtml(u)}</td><td class="tc">${us.length}</td><td class="tc" style="font-weight:700;color:${scoreClr(mean(us.map(subAvg)))}">${f1(mean(us.map(subAvg)))}</td><td class="tc">${us.filter(s=>Number(s.wk)===1).length}/${us.filter(s=>Number(s.wk)===2).length}</td><td class="tc">${us.filter(s=>s.comment&&String(s.comment).trim()).length}</td>${cells}</tr>`;
+  }).join('');
+  h+=`<div class="rp-h">${secU}. แยกตามสถาบัน</div><div class="chart-card" style="overflow-x:auto"><table class="ftbl"><tr><th>สถาบัน</th><th class="tc">คน</th><th class="tc">เฉลี่ย</th><th class="tc">1/2 สป.</th><th class="tc">ความเห็น</th>${multi?sel.map(y=>`<th class="tc">${yTh(y)}</th>`).join(''):''}</tr>${urows}</table></div>`;
+
+  /* ประเด็นจากความคิดเห็น */
+  const secT=secU+1;
+  h+=`<div class="rp-h">${secT}. ประเด็นที่นักศึกษากล่าวถึง</div><div class="chart-card">`+
+    (th.rows.length?th.rows.map(r=>`<div class="dur-row"><div class="dur-lbl" style="width:140px;font-size:12px">${r.t}</div><div class="dur-bw"><div class="dur-bar" style="width:${r.c/th.n*100}%;background:var(--a)"></div></div><div class="dur-cnt">${r.c}/${th.n}</div></div>`).join('')+`<p class="rp-note">นับจากคำสำคัญในความคิดเห็น (1 ความเห็นอาจอยู่หลายประเด็น) — ควรอ่านความเห็นจริงในภาคผนวกประกอบ</p>`:'<div class="chart-empty">ยังไม่มีความคิดเห็นที่จัดกลุ่มได้</div>')+`</div>`;
+
+  /* ข้อเสนอแนะ */
+  const secR=secT+1;
+  const recs=[];
+  order.filter(x=>x.v<4.5).slice(0,3).forEach(x=>recs.push(`ปรับปรุงด้าน "${SAT_Q[x.i]}" (คะแนน ${f1(x.v)}) — ${x.v<3.5?'ควรเร่งแก้ไข':'ยังมีที่ว่างให้พัฒนา'}`));
+  if(!recs.length&&order.length)recs.push('ทุกด้านอยู่ในระดับดีมาก (≥4.5) — รักษามาตรฐานเดิม');
+  th.rows.filter(r=>/ระยะเวลา|ตาราง|สถานที่/.test(r.t)).forEach(r=>recs.push(`พิจารณาประเด็น "${r.t}" ที่นักศึกษากล่าวถึง ${r.c} ความเห็น`));
+  if(w1&&w2){const a1=mean(subs.filter(s=>Number(s.wk)===1).map(subAvg)),a2=mean(subs.filter(s=>Number(s.wk)===2).map(subAvg));if(a1!==null&&a2!==null&&Math.abs(a1-a2)>=0.3)recs.push(`กลุ่มฝึก 1 สัปดาห์ (${f1(a1)}) และ 2 สัปดาห์ (${f1(a2)}) พึงพอใจต่างกัน ควรทบทวนกำหนดการของกลุ่มที่คะแนนต่ำกว่า`);}
+  h+=`<div class="rp-h">${secR}. ข้อเสนอแนะเพื่อพัฒนา (สร้างอัตโนมัติจากข้อมูล)</div><div class="chart-card"><ol class="rp-ol">${recs.map(r=>`<li>${escHtml(r)}</li>`).join('')}</ol></div>`;
+
+  /* ภาคผนวก */
+  h+=`<div class="rp-h">ภาคผนวก — ความคิดเห็นของนักศึกษาตามสถาบัน (ตามที่เขียนจริง)</div>`;
+  const byU={};cmts.forEach(s=>{(byU[s.uniC]=byU[s.uniC]||[]).push(s);});
+  const uk=Object.keys(byU).sort((a,b)=>byU[b].length-byU[a].length);
+  h+=uk.length?uk.map(u=>`<div class="chart-card"><h3 style="color:var(--p);font-weight:700">${escHtml(u)} (${byU[u].length})</h3>`+byU[u].sort((a,b)=>(a.ts||'').localeCompare(b.ts||'')).map(s=>`<div class="cmt-row"><div class="cmt-meta"><span class="cmt-uni">ปี ${s.year?yTh(s.year):'—'} · ฝึก ${s.wk||'—'} สัปดาห์</span></div><div class="cmt-txt">${escHtml(s.comment)}</div></div>`).join('')+`</div>`).join(''):'<div class="chart-empty">ไม่มีความคิดเห็น</div>';
+  out.html=h;
+  return out;
+}
+function rReport(){
+  const yrs=rptYearsAvail();
+  const sel=rptSelYears();
+  const allSel=!(S.rptSel&&S.rptSel.length);
+  const chips=`<button class="yr-btn${(allSel&&S.rptSel!==undefined)?' on':''}" onclick="rptToggleYear('all')">ทุกปี (เทียบเทรนด์)</button>`+
+    yrs.map(y=>`<button class="yr-btn${(!allSel||S.rptSel===undefined)&&sel.includes(y)?' on':''}" onclick="rptToggleYear('${y}')">ปี ${yTh(y)}</button>`).join('');
+  const r=rptBuild();
+  document.getElementById('rptContent').innerHTML=`
+    <div class="dash-refresh-row"><button class="dash-refresh-btn" onclick="manualRefreshRpt()">🔄 รีเฟรช</button></div>
+    <div class="rp-hint">เลือกปีเดียว = รายงานของปีนั้น · เลือกหลายปี/ทุกปี = รายงานรวม + เทรนด์เทียบรายปี (ไม่นับข้อมูลทดสอบ “เทส”, รวมชื่อสถาบันที่พิมพ์ต่างกันให้เป็นชื่อเดียว)</div>
+    <div class="yr-row">${chips}</div>
+    <div class="rp-actions"><button class="qr-btn open" onclick="rptPrint()">🖨 พิมพ์ / บันทึก PDF</button><button class="qr-btn copy" onclick="rptCopy()">📋 คัดลอกข้อความสรุป</button></div>
+    <div class="rpt">${r.html}</div>`;
+}
+function manualRefreshRpt(){
+  fetch('/api/results').then(r=>r.json()).then(d=>{if(d&&d.ok){SUBS_CACHE=d.submissions||[];SUBS_LOADED=true;rReport();toast('อัปเดตข้อมูลล่าสุดแล้ว');}}).catch(()=>toast('รีเฟรชไม่สำเร็จ'));
+}
+function rptPrint(){
+  const r=rptBuild();
+  document.getElementById('poTitle').textContent='รายงานความพึงพอใจ — '+r.yrLabel;
+  document.getElementById('pBody').innerHTML=`<div class="fdoc rpt"><div class="fdoc-hd"><h1>รายงานสรุปความพึงพอใจนักศึกษาฝึกงาน</h1><h2>${escHtml(S.cfg.dept||'ศูนย์ IR')}${S.cfg.hosp?' · '+escHtml(S.cfg.hosp):''}</h2><div class="fdoc-hp">${escHtml(r.yrLabel)}</div></div>${r.html}</div>`;
+  document.getElementById('printOv').classList.add('show');
+}
+function rptCopy(){
+  const r=rptBuild();
+  const t=`รายงานความพึงพอใจนักศึกษาฝึกงาน — ${r.yrLabel}\n${r.text}`;
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(()=>toast('คัดลอกแล้ว')).catch(()=>fallbackCopy(t,()=>toast('คัดลอกแล้ว')));
+  else fallbackCopy(t,()=>toast('คัดลอกแล้ว'));
 }
 
 LS();if(!S.dashYear)S.dashYear='all';if(!S.dInstSel)S.dInstSel='all';
